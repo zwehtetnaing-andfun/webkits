@@ -368,94 +368,120 @@ def compare_excel_files(file1_path, file2_path):
             
             # Find timeslot column if it exists
             timeslot_col = find_timeslot_column(sheet1)
-            
+
+            # Create dictionary to store Column E values and their row numbers
+            wb1_col_e = {}
+            wb2_col_e = {}
+
+            # Map Column E values for wb1 (column 5 = E)
+            for row in range(6, sheet1.max_row + 1):
+                value = normalize_value(sheet1.cell(row, 5).value)
+                if value is not None:
+                    wb1_col_e[value] = row
+
             # Compare cells
-            for row in range(1, row_max + 1):
-                for col in range(1, col_max + 1):
-                    try:
-                        # Get comparison columns
-                        comparison_cols = get_comparison_columns(col, file_name)
-                        if comparison_cols is None:
-                            continue  # Skip this column
-                            
-                        col1, col2 = comparison_cols
-                        value1 = sheet1.cell(row, col1).value
-                        value2 = sheet2.cell(row, col2).value
-
-                        logging.debug(f'Comparing cell ({row}, {col1}) with ({row}, {col2})')
-                        logging.debug(f'Value1: {value1}, Value2: {value2}')
-
-                        # Normalize values
-                        value1 = normalize_value(value1)
-                        value2 = normalize_value(value2)
-
-                        # Handle None values
-                        if value1 is None and value2 is None:
-                            continue
-                        if value1 is None or value2 is None:
-                            sheet2.cell(row, col2).fill = fill_pattern_yellow
-                            mismatch_found += 1
-                            logging.debug(f'Value mismatch at ({row}, {col2}): {value1} vs {value2}')
-                            continue
-
-                        # Convert to string and strip whitespace if not datetime object
-                        if not isinstance(value1, datetime):
-                            value1 = str(value1).strip()
-                        if not isinstance(value2, datetime):
-                            value2 = str(value2).strip()
-
-                        # Check if either value is a datetime
-                        is_datetime1 = isinstance(value1, datetime) or is_datetime_string(value1)
-                        is_datetime2 = isinstance(value2, datetime) or is_datetime_string(value2)
-
-                        if is_datetime1 or is_datetime2:
-                            date1 = extract_date_part(value1)
-                            date2 = extract_date_part(value2)
-                            
-                            if date1 != date2:
-                                sheet2.cell(row, col2).fill = fill_pattern_yellow
-                                mismatch_found += 1
-                                logging.debug(f'Date mismatch at ({row}, {col2}): {date1} vs {date2}')
-                            continue
-
-                        # Check if either value is a time string
-                        is_time1 = is_time_string(str(value1))
-                        is_time2 = is_time_string(str(value2))
-
-                        if is_time1 or is_time2:
-                            if not compare_time_values(value1, value2):
-                                sheet2.cell(row, col2).fill = fill_pattern_yellow
-                                mismatch_found += 1
-                                logging.debug(f'Time mismatch at ({row}, {col2}): {value1} vs {value2}')
-                            continue
-
-                        # Handle time range comparison
-                        if any(separator in str(value1) or separator in str(value2) 
-                              for separator in ['〜', '～', '~']):
-                            time1_parts = format_time_range(str(value1)).split('~')
-                            time2_parts = format_time_range(str(value2)).split('~')
-                            
-                            if len(time1_parts) == 2 and len(time2_parts) == 2:
-                                start_match = compare_time_parts(time1_parts[0], time2_parts[0])
-                                end_match = compare_time_parts(time1_parts[1], time2_parts[1])
-                                
-                                if not (start_match and end_match):
-                                    sheet2.cell(row, col2).fill = fill_pattern_yellow
-                                    mismatch_found += 1
-                                    logging.debug(f'Time range mismatch at ({row}, {col2}): {value1} vs {value2}')
-                                continue
-
-                        # For all other values, compare as strings
-                        if str(value1) != str(value2):
-                            if not is_ignored_mismatch(value1, value2):
-                                sheet2.cell(row, col2).fill = fill_pattern_yellow
-                                mismatch_found += 1
-                                logging.debug(f'Value mismatch at ({row}, {col2}): {value1} vs {value2}')
-                            
-                    except Exception as e:
-                        logging.error(f'Error comparing cell ({row}, {col2}): {str(e)}')
-                        mismatch_found += 1
+            for row2 in range(6, row_max + 1):
+                try:
+                    value = normalize_value(sheet2.cell(row2, 5).value)
+                    if value is None:
                         continue
+
+                    if value in wb1_col_e:
+                        row1 = wb1_col_e[value]
+                        logging.debug(f'Found match: wb1 row {row1} matches wb2 row {row2}')
+                        
+                        # Remove the matched value from wb1_col_e 
+                        del wb1_col_e[value]
+
+                        for col in range(3, col_max + 1):
+                            try:
+                                # Get comparison columns
+                                comparison_cols = get_comparison_columns(col, file_name)
+                                
+                                if comparison_cols is None:
+                                    continue  # Skip this column
+                                    
+                                col1, col2 = comparison_cols
+                                value1 = sheet1.cell(row1, col1).value
+                                value2 = sheet2.cell(row2, col2).value
+
+                                logging.debug(f'Comparing cell wb1({row1}, {col1}) with wb2({row2}, {col2})')
+                                logging.debug(f'Value1: {value1}, Value2: {value2}')
+
+                                # Normalize values
+                                value1 = normalize_value(value1)
+                                value2 = normalize_value(value2)
+
+                                # Handle None values
+                                if value1 is None and value2 is None:
+                                    continue
+                                if value1 is None or value2 is None:
+                                    sheet2.cell(row2, col2).fill = fill_pattern_yellow
+                                    mismatch_found += 1
+                                    logging.debug(f'Value mismatch at ({row2}, {col2}): {value1} vs {value2}')
+                                    continue
+
+                                # Convert to string and strip whitespace if not datetime object
+                                if not isinstance(value1, datetime):
+                                    value1 = str(value1).strip()
+                                if not isinstance(value2, datetime):
+                                    value2 = str(value2).strip()
+
+                                # Check if either value is a datetime
+                                is_datetime1 = isinstance(value1, datetime) or is_datetime_string(value1)
+                                is_datetime2 = isinstance(value2, datetime) or is_datetime_string(value2)
+
+                                if is_datetime1 or is_datetime2:
+                                    date1 = extract_date_part(value1)
+                                    date2 = extract_date_part(value2)
+                                    
+                                    if date1 != date2:
+                                        sheet2.cell(row2, col2).fill = fill_pattern_yellow
+                                        mismatch_found += 1
+                                        logging.debug(f'Date mismatch at ({row2}, {col2}): {date1} vs {date2}')
+                                    continue
+
+                                # Check if either value is a time string
+                                is_time1 = is_time_string(str(value1))
+                                is_time2 = is_time_string(str(value2))
+
+                                if is_time1 or is_time2:
+                                    if not compare_time_values(value1, value2):
+                                        sheet2.cell(row2, col2).fill = fill_pattern_yellow
+                                        mismatch_found += 1
+                                        logging.debug(f'Time mismatch at ({row2}, {col2}): {value1} vs {value2}')
+                                    continue
+
+                                # Handle time range comparison
+                                if any(separator in str(value1) or separator in str(value2) 
+                                    for separator in ['〜', '～', '~']):
+                                        time1_parts = format_time_range(str(value1)).split('~')
+                                        time2_parts = format_time_range(str(value2)).split('~')
+                                    
+                                        if len(time1_parts) == 2 and len(time2_parts) == 2:
+                                            start_match = compare_time_parts(time1_parts[0], time2_parts[0])
+                                            end_match = compare_time_parts(time1_parts[1], time2_parts[1])
+                                            
+                                            if not (start_match and end_match):
+                                                sheet2.cell(row2, col2).fill = fill_pattern_yellow
+                                                mismatch_found += 1
+                                                logging.debug(f'Time range mismatch at ({row2}, {col2}): {value1} vs {value2}')
+                                            continue
+
+                                # For all other values, compare as strings
+                                if str(value1) != str(value2):
+                                    if not is_ignored_mismatch(value1, value2):
+                                        sheet2.cell(row2, col2).fill = fill_pattern_yellow
+                                        mismatch_found += 1
+                                        logging.debug(f'Value mismatch at ({row2}, {col2}): {value1} vs {value2}')
+                                    
+                            except Exception as e:
+                                logging.error(f'Error comparing cell ({row2}, {col2}): {str(e)}')
+                                mismatch_found += 1
+                                continue
+                except Exception as e:
+                    logging.error(f'Error processing row {row2}: {str(e)}')
+                    continue
         
         # Determine final result
         result = 'X' if mismatch_found > 0 else 'O'
@@ -550,9 +576,21 @@ def compare_datetime_values(value1, value2):
         return False
 
 def is_ignored_mismatch(value1, value2):
+
+    """Check if the mismatch between value1 and value2 should be ignored."""
+    # List of terms to ignore
+    ignored_values = [
+        "有給", "振替", "特別", "欠勤", "病気", "介護", "育児", "看護", "公休"
+    ]
+
+    # Check if either value1 or value2 is in the ignored values list
+    if value1 in ignored_values or value2 in ignored_values:
+        return True
+
     """Check if the mismatch between value1 and value2 should be ignored."""
     same_pairs = [
         ("休み", "シフト時間コード-1"),
+        ("長期休", "シフト時間コード-1"),
         ("フリー", "シフト時間コード2147483647")
         # Add other ignored pairs if needed
     ]
