@@ -551,8 +551,18 @@ def compare_datetime_values(value1, value2):
 
 def is_ignored_mismatch(value1, value2):
     """Check if the mismatch between value1 and value2 should be ignored."""
+    # List of terms to ignore
+    ignored_values = [
+        "有給", "振替", "特別", "欠勤", "病気", "介護", "育児", "看護", "公休"
+    ]
+
+    # Check if either value1 or value2 is in the ignored values list
+    if value1 in ignored_values or value2 in ignored_values:
+        return True
+
     same_pairs = [
         ("休み", "シフト時間コード-1"),
+        ("長期休", "シフト時間コード-1"),
         ("フリー", "シフト時間コード2147483647")
         # Add other ignored pairs if needed
     ]
