@@ -524,6 +524,8 @@ def normalize_value(value):
     value = ' '.join(value.split())       # Normalize whitespace
     value = value.strip()                 # Remove leading/trailing whitespace
     
+    value = re.sub(r'(\d{1,3}:\d{2})\s+\(', r'\1(', value)  # Remove space before opening parenthesis
+    
     # If after cleaning the string is empty, return None
     if value == "":
         return None
