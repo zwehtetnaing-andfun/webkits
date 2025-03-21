@@ -584,6 +584,7 @@ def is_ignored_mismatch(value1, value2):
     """Check if the mismatch between value1 and value2 should be ignored."""
     ignored_pairs = [
         ("休み", "シフト時間コード-1"),
+        ("" , "シフト時間コード-1"),
         ("フリー", "シフト時間コード2147483647"),
         ("退職", "【退職後】"),
         ("フリー", "シフト時間コード2147483647"),
