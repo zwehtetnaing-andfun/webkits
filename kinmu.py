@@ -334,6 +334,30 @@ def compare_time_values(time1, time2):
     # Compare the normalized strings
     return time1 == time2
 
+
+def get_mapped_row(original_row, sheet1, sheet2):
+    
+    if( original_row > 37 ):
+        row = original_row
+    
+        while row < sheet1.max_row and row < sheet2.max_row:  # Prevents infinite loop
+            value1 = sheet1.cell(row, 3).value
+            value2 = sheet2.cell(original_row, 3).value
+
+            value1 = normalize_value(value1)
+            value2 = normalize_value(value2)
+
+            logging.info(f"Comparing for mapped row: v1 value is {value1} and v2 value is {value2}")
+
+            if value1 is None and value2 is not None:
+                return (row, original_row)
+
+            row += 1  # Increment the row to check the next one
+
+    return (original_row,original_row)
+    
+    
+
 def compare_excel_files(file1_path, file2_path):
     """Compare two Excel files and return comparison result and modified workbook."""
     logging.info(f'Starting comparison of files:\n  File 1: {file1_path}\n  File 2: {file2_path}')
@@ -398,8 +422,53 @@ def compare_excel_files(file1_path, file2_path):
             # Find timeslot column if it exists
             timeslot_col = find_timeslot_column(sheet1)
             
+            # Count data rows until '計' in column 3
+            sheet1_data_rows = 0
+            for row in range(10, sheet1.max_row + 1):
+                value = normalize_value(sheet1.cell(row, 3).value)
+                if value == '計':  # Use == for comparison
+                    break
+                sheet1_data_rows += 1
+                
+            sheet2_data_rows = 0
+            for row in range(10, sheet2.max_row + 1):
+                value = normalize_value(sheet2.cell(row, 3).value)  # Fixed typo: sheet1 -> sheet2
+                if value == '計':
+                    break
+                sheet2_data_rows += 1
+            
+            # Determine skip offset
+            skipped_row = sheet1_data_rows - sheet2_data_rows if sheet1_data_rows > sheet2_data_rows else 0
+            logging.debug(f'Data rows: File1={sheet1_data_rows}, File2={sheet2_data_rows}, Skip={skipped_row}')
+            
+
             # Compare cells
             for row in range(1, row_max + 1):
+                
+                # Default row mapping
+                row1 = row
+                row2 = row
+                
+                # Adjust rows if there's a skip and we're in the critical range
+                if skipped_row > 0 and 37 < row < 41:
+                    value1 = normalize_value(sheet1.cell(row, 3).value)
+                    value2 = normalize_value(sheet2.cell(row, 3).value)
+                    
+                    if value1 is None and value2 is not None:
+                        row1 = row + skipped_row  # Shift File1 forward
+                        row2 = row
+                    # elif value1 is not None and value2 is None:
+                    #     row1 = row
+                    #     row2 = row + skipped_row  # Shift File2 forward (unlikely case)
+                elif skipped_row > 0 and 40 < row < row_max:
+                    row1 = row + skipped_row
+                     
+                    
+                
+                # Ensure rows stay within bounds
+                if row1 > sheet1.max_row or row2 > sheet2.max_row:
+                    continue
+                
                 for col in range(1, col_max + 1):
                     try:
                         # Get comparison columns
@@ -408,10 +477,10 @@ def compare_excel_files(file1_path, file2_path):
                             continue  # Skip this column
                             
                         col1, col2 = comparison_cols
-                        value1 = sheet1.cell(row, col1).value
-                        value2 = sheet2.cell(row, col2).value
+                        value1 = sheet1.cell(row1, col1).value
+                        value2 = sheet2.cell(row2, col2).value
 
-                        logging.debug(f'Comparing cell ({row}, {col1}) with ({row}, {col2})')
+                        logging.debug(f'Comparing cell ({row1}, {col1}) with ({row2}, {col2})')
                         logging.debug(f'Value1: {value1}, Value2: {value2}')
 
                         # Normalize values
@@ -421,12 +490,7 @@ def compare_excel_files(file1_path, file2_path):
                         # Handle None values
                         if value1 is None and value2 is None:
                             continue
-                        if value1 is None or value2 is None:
-                            sheet2.cell(row, col2).fill = fill_pattern_yellow
-                            mismatch_found += 1
-                            logging.debug(f'Value mismatch at ({row}, {col2}): {value1} vs {value2}')
-                            continue
-
+                        
                         # Convert to string and strip whitespace if not datetime object
                         if not isinstance(value1, datetime):
                             value1 = str(value1).strip()
@@ -442,9 +506,9 @@ def compare_excel_files(file1_path, file2_path):
                             date2 = extract_date_part(value2)
                             
                             if date1 != date2:
-                                sheet2.cell(row, col2).fill = fill_pattern_yellow
+                                sheet2.cell(row2, col2).fill = fill_pattern_yellow
                                 mismatch_found += 1
-                                logging.debug(f'Date mismatch at ({row}, {col2}): {date1} vs {date2}')
+                                logging.debug(f'Date mismatch at ({row2}, {col2}): {date1} vs {date2}')
                             continue
 
                         # Check if either value is a time string
@@ -453,9 +517,9 @@ def compare_excel_files(file1_path, file2_path):
 
                         if is_time1 or is_time2:
                             if not compare_time_values(value1, value2):
-                                sheet2.cell(row, col2).fill = fill_pattern_yellow
+                                sheet2.cell(row2, col2).fill = fill_pattern_yellow
                                 mismatch_found += 1
-                                logging.debug(f'Time mismatch at ({row}, {col2}): {value1} vs {value2}')
+                                logging.debug(f'Time mismatch at ({row2}, {col2}): {value1} vs {value2}')
                             continue
 
                         # Handle time range comparison
@@ -471,18 +535,19 @@ def compare_excel_files(file1_path, file2_path):
                                 if not (start_match and end_match):
                                     sheet2.cell(row, col2).fill = fill_pattern_yellow
                                     mismatch_found += 1
-                                    logging.debug(f'Time range mismatch at ({row}, {col2}): {value1} vs {value2}')
+                                    logging.debug(f'Time range mismatch at ({row2}, {col2}): {value1} vs {value2}')
                                 continue
+                               
 
                         # For all other values, compare as strings
                         if str(value1) != str(value2):
                             if not is_ignored_mismatch(value1, value2):
-                                sheet2.cell(row, col2).fill = fill_pattern_yellow
+                                sheet2.cell(row2, col2).fill = fill_pattern_yellow
                                 mismatch_found += 1
-                                logging.debug(f'Value mismatch at ({row}, {col2}): {value1} vs {value2}')
+                                logging.debug(f'Value mismatch at ({row2}, {col2}): {value1} vs {value2}')
                             
                     except Exception as e:
-                        logging.error(f'Error comparing cell ({row}, {col2}): {str(e)}')
+                        logging.error(f'Error comparing cell ({row2}, {col2}): {str(e)}')
                         mismatch_found += 1
                         continue
         
@@ -584,7 +649,7 @@ def is_ignored_mismatch(value1, value2):
     """Check if the mismatch between value1 and value2 should be ignored."""
     ignored_pairs = [
         ("休み", "シフト時間コード-1"),
-        ("" , "シフト時間コード-1"),
+        ( "None" , "シフト時間コード-1"),
         ("フリー", "シフト時間コード2147483647"),
         ("退職", "【退職後】"),
         ("フリー", "シフト時間コード2147483647"),
