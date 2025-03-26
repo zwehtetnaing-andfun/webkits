@@ -334,30 +334,6 @@ def compare_time_values(time1, time2):
     # Compare the normalized strings
     return time1 == time2
 
-
-def get_mapped_row(original_row, sheet1, sheet2):
-    
-    if( original_row > 37 ):
-        row = original_row
-    
-        while row < sheet1.max_row and row < sheet2.max_row:  # Prevents infinite loop
-            value1 = sheet1.cell(row, 3).value
-            value2 = sheet2.cell(original_row, 3).value
-
-            value1 = normalize_value(value1)
-            value2 = normalize_value(value2)
-
-            logging.info(f"Comparing for mapped row: v1 value is {value1} and v2 value is {value2}")
-
-            if value1 is None and value2 is not None:
-                return (row, original_row)
-
-            row += 1  # Increment the row to check the next one
-
-    return (original_row,original_row)
-    
-    
-
 def compare_excel_files(file1_path, file2_path):
     """Compare two Excel files and return comparison result and modified workbook."""
     logging.info(f'Starting comparison of files:\n  File 1: {file1_path}\n  File 2: {file2_path}')
@@ -441,7 +417,8 @@ def compare_excel_files(file1_path, file2_path):
             skipped_row = sheet1_data_rows - sheet2_data_rows if sheet1_data_rows > sheet2_data_rows else 0
             logging.debug(f'Data rows: File1={sheet1_data_rows}, File2={sheet2_data_rows}, Skip={skipped_row}')
             
-
+            is_start_skip = False
+            
             # Compare cells
             for row in range(1, row_max + 1):
                 
@@ -454,17 +431,14 @@ def compare_excel_files(file1_path, file2_path):
                     value1 = normalize_value(sheet1.cell(row, 3).value)
                     value2 = normalize_value(sheet2.cell(row, 3).value)
                     
-                    if value1 is None and value2 is not None:
+                    if not is_start_skip and value1 is None and value2 is not None:
                         row1 = row + skipped_row  # Shift File1 forward
                         row2 = row
-                    # elif value1 is not None and value2 is None:
-                    #     row1 = row
-                    #     row2 = row + skipped_row  # Shift File2 forward (unlikely case)
-                elif skipped_row > 0 and 40 < row < row_max:
+                        is_start_skip = True
+
+                elif is_start_skip:
                     row1 = row + skipped_row
                      
-                    
-                
                 # Ensure rows stay within bounds
                 if row1 > sheet1.max_row or row2 > sheet2.max_row:
                     continue
