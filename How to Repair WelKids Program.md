@@ -22,7 +22,7 @@ workplace scheduling formats with special attention to time formats, date handli
     - Highlights differences in yellow in the output file
 
 ## Technical Architecture
-----
+ 
 
 ### Key Components
 
@@ -71,7 +71,7 @@ Manages column mapping between sheets:
 - Returns tuple of (col1, col2) or None for skipped columns
 
 ## Extension Points
-----
+ 
 
 ### Adding New Functionality
 
@@ -111,7 +111,7 @@ Current error handling can be enhanced by:
 
 ## Known Limitations
 
-----
+ 
 
 
 1. Sheet Naming
@@ -125,7 +125,7 @@ Current error handling can be enhanced by:
    - May struggle with very large Excel files
 
 ## Maintenance Guidelines
-----
+ 
 
 ### Adding New Features
 
@@ -160,7 +160,7 @@ except Exception as e:
    - Large files
 
 ## Future Enhancement SuggestionsFuture Enhancement Suggestions
-----
+ 
 
 1. Performance Improvements
    - Implement parallel processing
@@ -177,7 +177,7 @@ except Exception as e:
 
 ## Dependencies
 
-------
+
 
    - `Python 3.x`
    - `openpyxl`
@@ -190,7 +190,7 @@ except Exception as e:
    - `datetime`
 
 ## Configuration
-----
+ 
 
 Logging levels can be set to:
 - DEBUG: Detailed debugging information
@@ -206,7 +206,7 @@ setup_logging('WARNING') # For minimal logging
 
 
 ## Modification Guide
-----
+ 
 
 ### 1. Skipping Specific Columns
 
