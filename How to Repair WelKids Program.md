@@ -150,7 +150,7 @@ except Exception as e:
    raise
 ```
 
-### Testing New FeaturesTesting New Features
+### Testing New Features
 
 1. Test with various Excel formats
 2. Verify handling of:
@@ -159,7 +159,7 @@ except Exception as e:
    - Empty cells
    - Large files
 
-## Future Enhancement SuggestionsFuture Enhancement Suggestions
+## Future Enhancement Suggestions
  
 
 1. Performance Improvements
@@ -256,7 +256,7 @@ def compare_excel_files(file1_path, file2_path):
 ```
 Location: Find the function `compare_excel_files()` around line 390 in `kinmu.py`
 
-### 3. Limiting Maximum Rows and Columns3. Limiting Maximum Rows and Columns
+### 3. Limiting Maximum Rows and Columns
 
 To limit the maximum rows and columns for comparison, modify the dimension calculation in compare_excel_files():
 
@@ -281,7 +281,7 @@ def compare_excel_files(file1_path, file2_path):
 
 Location: Find the max row/column calculation in `compare_excel_files()` around line 450 in `kinmu.py`
 
-### 4. Modifying Time Format Comparison4. Modifying Time Format Comparison
+### 4. Modifying Time Format Comparison
 
 To change how time formats are compared, modify the normalize_time_format() function:
 
@@ -299,7 +299,7 @@ def normalize_time_format(time_str):
 ```
 Location: Find the function `normalize_time_format()` around line 280 in `kinmu.py`
 
-### 5. Adding New Value Comparison Rules5. Adding New Value Comparison Rules
+### 5. Adding New Value Comparison Rules
 
 To add new rules for comparing values, modify the comparison section in `compare_excel_files()`:
 
@@ -327,7 +327,7 @@ def compare_excel_files(file1_path, file2_path):
 ```
 Location: Find the value comparison section in `compare_excel_files()` around line 500 in `kinmu.py`
 
-### 6. Modifying Sheet Name Matching6. Modifying Sheet Name Matching
+### 6. Modifying Sheet Name Matching
 
 To change how sheets are matched between workbooks, modify the sheet name extraction:
 
@@ -350,7 +350,7 @@ def extract_sheet_name_string(sheet_name):
 
 Location: Find the function `extract_sheet_name_string()` around line 350 in `kinmu.py`
 
-### 7. Adding New Ignored Mismatches7. Adding New Ignored Mismatches
+### 7. Adding New Ignored Mismatches
 
 To add new pairs of values that should be considered equivalent:
 
@@ -368,7 +368,7 @@ def is_ignored_mismatch(value1, value2):
 ```
 Location: Find the function `is_ignored_mismatch()` around line 580 in `kinmu.py`
 
-### 8. Modifying Output Highlighting8. Modifying Output Highlighting
+### 8. Modifying Output Highlighting
 
 To change how differences are highlighted in the output:
 
