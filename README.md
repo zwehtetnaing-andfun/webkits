@@ -26,6 +26,10 @@ pip install pyinstaller
 pyinstaller --onefile --noconsole --icon=your_icon.ico your_script.py
 ```
 
+----
+
+[See Documention For Repair](https://github.com/zwehtetnaing-andfun/webkits/blob/main/How%20to%20Repair%20WelKids%20Program.md)
+
 
 
 
